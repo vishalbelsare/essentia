@@ -1,6 +1,7 @@
 import shutil
 import os
 import glob
+import subprocess
 import sys
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext
@@ -36,20 +37,25 @@ class EssentiaBuildExtension(build_ext):
         var_skip_3rdparty = 'ESSENTIA_WHEEL_SKIP_3RDPARTY'
         var_only_python = 'ESSENTIA_WHEEL_ONLY_PYTHON'
 
+        var_macos_arm64 = os.getenv('ESSENTIA_MACOSX_ARM64')
+        macos_arm64_flags = []
+        if var_macos_arm64 == '1':
+            macos_arm64_flags = ['--arch=arm64', '--no-msse']
+
         if var_skip_3rdparty in os.environ and os.environ[var_skip_3rdparty]=='1':
             print('Skipping building static 3rdparty dependencies (%s=1)' %  var_skip_3rdparty)
         else:
-            os.system('./packaging/build_3rdparty_static_debian.sh')
+            subprocess.run('./packaging/build_3rdparty_static_debian.sh', check=True)
 
         if var_only_python in os.environ and os.environ[var_only_python]=='1':
             print('Skipping building the core libessentia library (%s=1)' %  var_only_python)
-            os.system('%s waf configure --only-python --static-dependencies '
-                      '--prefix=tmp' % PYTHON)
+            subprocess.run([PYTHON,  'waf', 'configure', '--only-python', '--static-dependencies',
+                      '--prefix=tmp'] + macos_arm64_flags, check=True)
         else:
-            os.system('%s waf configure --build-static --static-dependencies '
-                      '--with-python --prefix=tmp' % PYTHON)
-        os.system('%s waf' % PYTHON)
-        os.system('%s waf install' % PYTHON)
+            subprocess.run([PYTHON, 'waf', 'configure', '--build-static', '--static-dependencies',
+                      '--with-python', '--prefix=tmp'] + macos_arm64_flags, check=True)
+        subprocess.run([PYTHON, 'waf'], check=True)
+        subprocess.run([PYTHON, 'waf', 'install'], check=True)
 
         library = glob.glob('tmp/lib/python*/*-packages/essentia')[0]
 
@@ -71,7 +77,13 @@ def get_version():
         # Development version. Get the number of commits after the last release
         git_version = get_git_version()
         print('git describe:', git_version)
-        dev_commits = git_version.split('-')[-2] if git_version else ''
+        # `git describe --always --tags` only yields '<tag>-<commits>-g<sha>' when a tag is
+        # REACHABLE. With no tags in the clone -- the normal case for a fork, since GitHub does
+        # not copy tags, and for any shallow checkout -- `--always` falls back to a bare sha,
+        # which has no '-' to split on and made the [-2] index raise IndexError instead of
+        # reaching the graceful fallback immediately below.
+        describe_parts = git_version.split('-') if git_version else []
+        dev_commits = describe_parts[-2] if len(describe_parts) >= 2 else ''
         if not dev_commits.isdigit():
             print('Error parsing the number of dev commits: %s', dev_commits)
             dev_commits = '0'
@@ -80,7 +92,6 @@ def get_version():
 
 
 classifiers = [
-    'License :: OSI Approved :: GNU Affero General Public License v3',
     'Development Status :: 4 - Beta',
     'Intended Audience :: Developers',
     'Intended Audience :: Science/Research',
@@ -103,9 +114,6 @@ Essentia is an open-source C++ library with Python bindings for audio analysis a
 Website: https://essentia.upf.edu
 '''
 
-setup_requires = ['numpy>=1.8.2', 'six']
-install_requires = setup_requires + ['pyyaml']
-
 # Require tensorflow for the package essentia-tensorflow
 # We are using version 2.5.0 as it is the newest version supported by the C API
 # https://www.tensorflow.org/guide/versions
@@ -115,7 +123,6 @@ if project_name == 'essentia-tensorflow':
 module = Extension('name', sources=[])
 
 setup(
-    name=project_name,
     version=get_version(),
     description=description,
     long_description=long_description,
@@ -130,8 +137,6 @@ setup(
     license='AGPLv3',
     platforms='any',
     classifiers=classifiers,
-    setup_requires=setup_requires,
-    install_requires=install_requires,
     ext_modules=[module],
     cmdclass={
         'build_ext': EssentiaBuildExtension,

@@ -1,6 +1,6 @@
 Essentia
 ========
-[![Build wheels status](https://github.com/MTG/essentia/actions/workflows/build-wheels.yml/badge.svg)](https://github.com/MTG/essentia/actions/workflows/build-wheels.yml)
+[![Build wheels status](https://github.com/MTG/essentia/actions/workflows/build-wheels-cibuildwheel.yml/badge.svg)](https://github.com/MTG/essentia/actions/workflows/build-wheels-cibuildwheel.yml)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![PyPI downloads: essentia](https://img.shields.io/pypi/dm/essentia.svg?label=PyPI%20downloads:%20essentia)](https://pypi.org/project/essentia/)
 [![PyPI downloads: essentia-tensorflow](https://img.shields.io/pypi/dm/essentia-tensorflow.svg?label=PyPI%20downloads:%20essentia-tensorflow)](https://pypi.org/project/essentia-tensorflow/)
@@ -34,7 +34,7 @@ Quick start
 
 Quick start using Python:
 - http://essentia.upf.edu/documentation/essentia_python_tutorial.html
-- [Jupyter Notebook Essentia tutorial](/src/examples/tutorial/essentia_python_tutorial.ipynb)
+- [Jupyter Notebook Essentia tutorial](/src/examples/python/essentia_python_tutorial.ipynb)
 
 Command-line tools to compute common music descriptors:
 - [doc/sphinxdoc/extractors_out_of_box.rst](doc/sphinxdoc/extractors_out_of_box.rst)
